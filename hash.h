@@ -5,42 +5,89 @@
 #include <cmath>
 #include <random>
 #include <chrono>
+#include <string>
+#include <vector>
 
 typedef std::size_t HASH_INDEX_T;
 
 struct MyStringHash {
+    // Predefined or randomized values
     HASH_INDEX_T rValues[5] { 983132572, 1468777056, 552714139, 984953261, 261934300 };
+
+    // Constructor to optionally initialize with random values
     MyStringHash(bool debug = true)
     {
-        if(false == debug){
+        if(!debug){
             generateRValues();
         }
     }
-    // hash function entry point (i.e. this is h(k))
-    HASH_INDEX_T operator()(const std::string& k) const
-    {
-        // Add your code here
 
+    // Operator() to compute hash value of a string
+    HASH_INDEX_T operator()(const std::string& k) const {
+      std::vector<unsigned long long> w(5, 0);
+      const int segmentLength = 6;
+      int fullSegments = k.length() / segmentLength;
+      int remainingChars = k.length() % segmentLength;
+      
+      int segmentIndex = 0;
+      
+      if (remainingChars > 0) {
+        unsigned long long segmentValue = 0;
+        unsigned long long base = 1;
 
+        for (int j = remainingChars - 1; j >= 0; --j) {
+          segmentValue += letterDigitToNumber(k[j]) * base;
+          base *= 36;
+        }
+
+        w[4 - fullSegments] = segmentValue;
+        // std::cout << "Segment " << segmentIndex << ": start=0, end=" << remainingChars << ", w[4 - " << fullSegments << "] = " << segmentValue << std::endl;
+        segmentIndex++;
+      }
+      
+      for (int i = 0; i < fullSegments; ++i) {
+        int start = remainingChars + i * segmentLength;
+        int end = start + segmentLength;
+        unsigned long long segmentValue = 0;
+        unsigned long long base = 1;
+
+        for (int j = end - 1; j >= start; --j) {
+            segmentValue += letterDigitToNumber(k[j]) * base;
+            base *= 36;
+        }
+
+        w[4 - i] = segmentValue;
+        
+        // std::cout << "Segment " << segmentIndex << ": start=" << start << ", end=" << end << ", w[4 - " << i << "] = " << segmentValue << std::endl;
+        segmentIndex++;
     }
 
-    // A likely helper function is to convert a-z,0-9 to an integral value 0-35
-    HASH_INDEX_T letterDigitToNumber(char letter) const
-    {
-        // Add code here or delete this helper function if you do not want it
+    unsigned long long hashValue = 0;
 
+    for (int i = 0; i < 5; ++i) {
+      unsigned long long part = rValues[i] * w[i];
+      hashValue += part;
+      // std::cout << "w[" << i << "] = " << w[i] << ", rValues[" << i << "] = " << rValues[i] << ", Product = " << part << ", Partial Hash = " << hashValue << std::endl;
+    }
+
+    // std::cout << "Final Hash Value = " << hashValue << std::endl;
+    return hashValue;
+  }
+
+    // Convert letters and digits to numbers from 0 to 35
+    unsigned int letterDigitToNumber(char letter) const
+    {
+        if (isdigit(letter)) return letter - '0' + 26;
+        if (isupper(letter)) letter = tolower(letter);
+        return letter - 'a';
     }
 
     // Code to generate the random R values
     void generateRValues()
     {
-        // obtain a seed from the system clock:
         unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-        std::mt19937 generator (seed);  // mt19937 is a standard random number generator
-
-        // Simply call generator() [it has an operator()] to get another random number
-        for(int i{ 0 }; i < 5; ++i)
-        {
+        std::mt19937 generator(seed);  // mt19937 is a standard random number generator
+        for (int i = 0; i < 5; ++i) {
             rValues[i] = generator();
         }
     }
