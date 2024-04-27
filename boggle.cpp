@@ -91,9 +91,32 @@ std::set<std::string> boggle(const std::set<std::string>& dict, const std::set<s
 	return result;
 }
 
-bool boggleHelper(const std::set<std::string>& dict, const std::set<std::string>& prefix, const std::vector<std::vector<char> >& board, 
-								   std::string word, std::set<std::string>& result, unsigned int r, unsigned int c, int dr, int dc)
-{
-//add your solution here!
+bool boggleHelper(const std::set<std::string>& dict, const std::set<std::string>& prefix, const std::vector<std::vector<char>>& board,
+                  std::string word, std::set<std::string>& result, unsigned int r, unsigned int c, int dr, int dc) {
+    // Check if out of bounds
+    if (r >= board.size() || c >= board.size() || r < 0 || c < 0) {
+        return false;
+    }
 
+    // Add current character to the word
+    word += board[r][c];
+
+    // Check if the current word is not a prefix
+    if (!prefix.count(word)) {
+        return false;
+    }
+
+    // Check if it's a valid word in the dictionary
+    bool isCompleteWord = dict.count(word) > 0;
+
+    // Continue searching in the same direction
+    bool foundLongerWord = boggleHelper(dict, prefix, board, word, result, r + dr, c + dc, dr, dc);
+
+    // If no longer word found and current is a complete word, update the result
+    if (!foundLongerWord && isCompleteWord) {
+        result.insert(word);
+        return true; // Indicate a word was added
+    }
+
+    return foundLongerWord; // Continue passing true if longer words are being found
 }
